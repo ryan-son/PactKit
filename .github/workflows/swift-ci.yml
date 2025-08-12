@@ -1,0 +1,31 @@
+name: PactKit CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Cache Swift PM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build library
+        run: swift build -v
+
+      - name: Run tests
+        run: swift test -v --enable-code-coverage
