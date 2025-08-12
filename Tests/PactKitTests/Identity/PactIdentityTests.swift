@@ -5,10 +5,11 @@
 //  Created by Geonhee on 8/12/25.
 //
 
-import Testing
-@testable import PactKit
 import CryptoKit
 import Foundation
+import Testing
+
+@testable import PactKit
 
 @Suite("Pact.Identity Tests")
 struct PactIdentityTests {

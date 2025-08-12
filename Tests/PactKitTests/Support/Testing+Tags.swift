@@ -14,6 +14,7 @@ extension Tag {
   @Tag static var e2e: Self
 
   // MARK: Feature Area
+  @Tag static var channel: Self
   @Tag static var identity: Self
   @Tag static var keychain: Self
 
