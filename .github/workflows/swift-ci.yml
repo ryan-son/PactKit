@@ -52,6 +52,9 @@ jobs:
       - name: Generate DocC documentation
         run: swift package --allow-writing-to-directory ./docs generate-documentation --target PactKitCore --output-path ./docs --transform-for-static-hosting --hosting-base-path PactKit
 
+      - name: Create .nojekyll file
+        run: touch ./docs/.nojekyll
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
