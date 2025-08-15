@@ -20,7 +20,15 @@ extension Pact.Host {
     let hostEphemeralPrivateKey = P256.KeyAgreement.PrivateKey()
     let hostEphemeralPublicKey = hostEphemeralPrivateKey.publicKey
 
-    let counterpartEphemeralPublicKey = try P256.KeyAgreement.PublicKey(rawRepresentation: handshakeRequest.ephemeralPublicKey)
+    var counterpartKeyData = handshakeRequest.ephemeralPublicKey
+
+    // The `0x04` prefix indicates an uncompressed public key format.
+    // CryptoKit's rawRepresentation expects the raw x and y coordinates without this prefix.
+    if counterpartKeyData.first == 0x04 {
+        counterpartKeyData = counterpartKeyData.dropFirst()
+    }
+
+    let counterpartEphemeralPublicKey = try P256.KeyAgreement.PublicKey(rawRepresentation: counterpartKeyData)
 
     let sharedSecret = try hostEphemeralPrivateKey.sharedSecretFromKeyAgreement(with: counterpartEphemeralPublicKey)
 
