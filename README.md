@@ -92,6 +92,7 @@ do {
 } catch {
   print("An error occurred during handshake: \(error.localizedDescription)")
 }
+```
 
 ## License
 

@@ -37,8 +37,10 @@ jobs:
     name: Deploy Documentation
     needs: build-and-test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     runs-on: macos-15
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
