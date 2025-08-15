@@ -48,4 +48,4 @@ jobs:
           xcodebuild build \
             -project Examples/PactKit-iOS-Example/PactKit-iOS-Example.xcodeproj \
             -scheme PactKit-iOS-Example \
-            -destination 'platform=iOS Simulator,name=iPhone 15'
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
