@@ -1,0 +1,51 @@
+name: PactKit CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "*" ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test-library:
+    name: Test PactKitCore
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache Swift PM dependencies
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+
+      - name: Run library tests
+        run: swift test
+
+  build-example-app:
+    name: Build Example App
+    needs: build-and-test-library
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+
+      - name: Build iOS Example App
+        run: |
+          xcodebuild build \
+            -project Examples/PactKit-iOS-Example/PactKit-iOS-Example.xcodeproj \
+            -scheme PactKit-iOS-Example \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
