@@ -8,44 +8,49 @@
 import CryptoKit
 import Foundation
 
+import Foundation
+import CryptoKit
+
 extension Pact.Host {
-  /// Establishes a new secure channel with a counterpart.
-  /// This method performs the authenticated ECDH key exchange protocol (P-256 for key agreement + Ed25519 for signing).
+  /// Establishes a new secure channel with a counterpart using their ephemeral public key.
   ///
-  /// - Parameter handshakeRequest: The initial request from the counterpart, containing their ephemeral public key.
-  /// - Returns: A tuple containing the newly created `Pact.Channel` for secure communication and a `HandshakeResponse` to be sent back to the counterpart.
+  /// This method performs the complete authenticated ECDH key exchange protocol (P-256 for key agreement + Ed25519 for signing).
+  /// It handles key format interoperability between CryptoKit and other crypto libraries (like JavaScript's SubtleCrypto).
+  ///
+  /// - Parameter counterpartEphemeralPublicKeyData: The raw ephemeral public key received from the counterpart. This data may include a prefix (e.g., `0x04`).
+  /// - Returns: A tuple containing the newly established `Pact.Channel` for secure communication and the `HandshakeResponse` to be sent back to the counterpart.
   public func establishChannel(
-    with handshakeRequest: Pact.HandshakeRequest
+    with counterpartEphemeralPublicKeyData: Data
   ) throws -> (channel: Pact.Channel, response: Pact.HandshakeResponse) {
-    let hostEphemeralPrivateKey = P256.KeyAgreement.PrivateKey()
-    let hostEphemeralPublicKey = hostEphemeralPrivateKey.publicKey
+    let converter = P256PublicKeyConverter()
 
-    var counterpartKeyData = handshakeRequest.ephemeralPublicKey
+    let operationResult: CryptoOperationResult<(channel: Pact.Channel, signature: Data)> = try converter.perform(with: counterpartEphemeralPublicKeyData) { counterpartPublicKey in
 
-    // The `0x04` prefix indicates an uncompressed public key format.
-    // CryptoKit's rawRepresentation expects the raw x and y coordinates without this prefix.
-    if counterpartKeyData.first == 0x04 {
-        counterpartKeyData = counterpartKeyData.dropFirst()
+      let hostEphemeralPrivateKey = P256.KeyAgreement.PrivateKey()
+      let hostEphemeralPublicKey = hostEphemeralPrivateKey.publicKey
+
+      let sharedSecret = try hostEphemeralPrivateKey.sharedSecretFromKeyAgreement(with: counterpartPublicKey)
+
+      let transcript = hostEphemeralPublicKey.rawRepresentation + counterpartPublicKey.rawRepresentation
+
+      let sessionKey = sharedSecret.hkdfDerivedSymmetricKey(
+        using: SHA256.self,
+        salt: "PactKit-Channel-Establishment-Salt".data(using: .utf8)!,
+        sharedInfo: transcript,
+        outputByteCount: 32
+      )
+
+      let signature = try self.signature(for: transcript)
+      let channel = Pact.Channel(sessionKey: sessionKey)
+      return (responseKey: hostEphemeralPublicKey, result: (channel, signature))
     }
 
-    let counterpartEphemeralPublicKey = try P256.KeyAgreement.PublicKey(rawRepresentation: counterpartKeyData)
+    let responseKeyData = operationResult.responseKeyData
+    let (channel, signature) = operationResult.result
 
-    let sharedSecret = try hostEphemeralPrivateKey.sharedSecretFromKeyAgreement(with: counterpartEphemeralPublicKey)
-
-    let sessionKey = sharedSecret.hkdfDerivedSymmetricKey(
-      using: SHA256.self,
-      salt: "PactKit-Channel-Establishment-Salt".data(using: .utf8)!,
-      sharedInfo: hostEphemeralPublicKey.rawRepresentation + counterpartEphemeralPublicKey.rawRepresentation,
-      outputByteCount: 32 // 256 bits for AES-256-GCM.
-    )
-
-    let transcript = hostEphemeralPublicKey.rawRepresentation + counterpartEphemeralPublicKey.rawRepresentation
-    let signature = try self.identity.privateKey.signature(for: transcript)
-
-    let channel = Pact.Channel(sessionKey: sessionKey)
     let response = Pact.HandshakeResponse(
-      ephemeralPublicKey: hostEphemeralPublicKey.rawRepresentation,
-      signature: signature
+        ephemeralPublicKey: responseKeyData,
+        signature: signature
     )
 
     return (channel, response)

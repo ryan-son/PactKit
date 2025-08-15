@@ -5,6 +5,7 @@
 //  Created by Geonhee on 8/12/25.
 //
 
+import CryptoKit
 import Foundation
 
 extension Pact {
@@ -13,7 +14,12 @@ extension Pact {
   public final class Host {
 
     /// The permanent identity of this Host, used for signing operations.
-    public let identity: Identity
+    private let identity: Identity
+
+    /// The public part of the identity key, which can be shared with counterparts for signature verification.
+    public var identityPublicKey: Curve25519.Signing.PublicKey {
+      identity.publicKey
+    }
 
     /// Initializes a new Host instance.
     ///
@@ -23,6 +29,13 @@ extension Pact {
     ///   Defaults to a standard `KeychainStore`.
     public init(identityStore: any SecureKeyStoring = KeychainStore()) throws {
       self.identity = try Identity(keyStore: identityStore)
+    }
+
+    /// Signs the given data with the Host's permanent identity private key.
+    /// - Parameter data: The data to be signed.
+    /// - Returns: The signature for the given data.
+    public func signature(for data: Data) throws -> Data {
+      return try identity.privateKey.signature(for: data)
     }
   }
 }
