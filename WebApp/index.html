@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PactKit Demo</title>
+    <style>
+        body { font-family: sans-serif; padding: 1rem; }
+        #log { background-color: #f0f0f0; border: 1px solid #ccc; padding: 0.5rem; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>PactKit E2E Encryption Demo</h1>
+    <p>Open the console to see detailed logs.</p>
+    <button id="handshakeButton">1. Start Secure Handshake</button>
+    <hr>
+    <input type="text" id="messageInput" placeholder="Enter a secret message" disabled>
+    <button id="sendButton" disabled>2. Send Secure Message</button>
+    <div id="log"></div>
+
+    <script src="main.js"></script>
+</body>
+</html>
