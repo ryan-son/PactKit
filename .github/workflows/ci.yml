@@ -34,7 +34,7 @@ jobs:
 
   build-example-app:
     name: Build Example App
-    needs: test-library
+    needs: build-and-test-library
     runs-on: macos-15
     steps:
       - name: Checkout repository
