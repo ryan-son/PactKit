@@ -26,7 +26,7 @@ struct PactHostChannelTests {
     "Establishes a symmetric channel and enables E2E encryption (prefixed key)",
     .tags(.integration, .channel, .symmetric)
   )
-  func channelEstablishmentWithPrefix() throws {
+  func successfulChannelEstablishmentWithPrefix() throws {
     // Arrange: Simulate a counterpart with its own Host instance and a prefixed key.
     // A real counterpart would be on another device, but for testing, we can simulate it with another Host.
     let counterpartPrivateKey = P256.KeyAgreement.PrivateKey()
@@ -56,7 +56,7 @@ struct PactHostChannelTests {
     "Establishes a symmetric channel and enables E2E encryption (raw key)",
     .tags(.integration, .channel, .symmetric)
   )
-  func channelEstablishmentWithoutPrefix() throws {
+  func successfulChannelEstablishmentWithoutPrefix() throws {
     // Arrange: Simulate a counterpart sending a raw 64-byte key.
     let counterpartPrivateKey = P256.KeyAgreement.PrivateKey()
     let counterpartKeyForExport = counterpartPrivateKey.publicKey.rawRepresentation
@@ -74,6 +74,20 @@ struct PactHostChannelTests {
     )
 
     try assertCommunication(between: hostChannel, and: counterpartChannel)
+  }
+
+  @Test(
+    "Establish channel should throw invalidKeySize error for incorrectly sized keys",
+    .tags(.integration, .channel, .errorHandling)
+  )
+  func channelEstablishmentFailsWithInvalidKeySize() throws {
+    // Arrange: Simulate a counterpart sending a key with an invalid size (e.g., 62 bytes).
+    let invalidKeyData = Data(repeating: 0x01, count: 62)
+
+    // Act & Assert: Expect the specific error to be thrown.
+    #expect(throws: Pact.Error.self) {
+      _ = try host.establishChannel(with: invalidKeyData)
+    }
   }
 
   // MARK: - Test Helpers
