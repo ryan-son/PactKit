@@ -7,7 +7,7 @@
 
 import Combine
 import Foundation
-import PactKit
+import PactKitCore
 
 @MainActor
 final class HostModel: ObservableObject {

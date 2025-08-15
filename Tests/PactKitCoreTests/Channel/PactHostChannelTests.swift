@@ -8,7 +8,7 @@
 import CryptoKit
 import Testing
 
-@testable import PactKit
+@testable import PactKitCore
 
 @Suite("Pact.Host Channel Establishment Tests")
 struct PactHostChannelTests {
