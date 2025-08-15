@@ -2,9 +2,15 @@
 
 🛡️ **Establish a circle of trust, anywhere.**
 
-[![CI Status](https://github.com/ryan-son/PactKit/actions/workflows/swift-ci.yml/badge.svg)](https://github.com/<YourUsername>/PactKit/actions)
+[![CI Status](https://github.com/ryan-son/PactKit/actions/workflows/ci.yml/badge.svg)](https://github.com/ryan-son/PactKit/actions)
 
 A modern, Swift-native, end-to-end security framework for iOS. PactKit allows your app to act as a trusted host, creating secure, ephemeral communication channels with any counterpart.
+
+---
+
+## Philosophy
+
+PactKit is built on the principle that a trusted native application (`Host`) can extend its "circle of trust" to an untrusted environment (`Counterpart`). It provides the cryptographic foundation to verify identity and ensure confidentiality in any local or hybrid communication scenario without relying on a central server.
 
 ---
 
@@ -16,9 +22,7 @@ A modern, Swift-native, end-to-end security framework for iOS. PactKit allows yo
 - 🧩 **Extensible & Testable:** Designed with protocols and dependency injection at its core for maximum flexibility and robustness.
 - 🤝 **Transport Agnostic:** The core logic is completely independent of the communication layer, making it suitable for WebViews, Bluetooth (BLE), Wi-Fi Direct, and more.
 
-## Philosophy
-
-PactKit is built on the principle that a trusted native application (`Host`) can extend its "circle of trust" to an untrusted environment (`Counterpart`). It provides the cryptographic foundation to verify identity and ensure confidentiality in any local or hybrid communication scenario without relying on a central server.
+---
 
 ## Installation
 
@@ -29,29 +33,25 @@ PactKit can be added to your project using Swift Package Manager.
 1.  In Xcode, open your project and navigate to **File > Add Packages...**
 2.  Paste the repository URL into the search bar at the top right:
     ```
-    https://github.com/ryan-son/PactKit.git
+    [https://github.com/ryan-son/PactKit.git](https://github.com/ryan-son/PactKit.git)
     ```
-3.  For the **Dependency Rule**, select **Up to Next Major Version** and enter `1.0.0`.
+3.  For the **Dependency Rule**, select **Up to Next Major Version** and enter `0.1.0`.
 4.  Click **Add Package**.
 5.  Choose the `PactKitCore` library product and add it to your app's target.
 
 ### Using Package.swift
 
-If you are managing your dependencies in a `Package.swift` file, add `PactKit` to your dependencies array:
+Add `PactKit` to your dependencies array in your `Package.swift` file:
 
 ```swift
-// Package.swift
-
 dependencies: [
-  .package(url: "https://github.com/ryan-son/PactKit.git", from: "0.1.0")
+  .package(url: "[https://github.com/ryan-son/PactKit.git](https://github.com/ryan-son/PactKit.git)", from: "0.1.0")
 ]
-```
+````
 
-Then, add the PactKitCore product to the dependencies of your target:
+Then, add the `PactKitCore` product to your target's dependencies:
 
 ```swift
-// Package.swift
-
 .target(
   name: "YourAppTarget",
   dependencies: [
@@ -59,6 +59,8 @@ Then, add the PactKitCore product to the dependencies of your target:
   ]
 )
 ```
+
+-----
 
 ## Quick Start
 
@@ -94,6 +96,22 @@ do {
 }
 ```
 
+-----
+
+## Documentation
+
+For a detailed API reference, please visit our official documentation website, hosted on GitHub Pages. The site is automatically updated with the latest changes from the `main` branch.
+
+**[Documentation](https://ryan-son.github.io/PactKit/main/documentation/pactkitcore/)**
+
+-----
+
+## Example Project
+
+For a complete, runnable example of how to use PactKit with a SwiftUI and WKWebView, please see the `PactKit-iOS-Example` project in the `Examples/` directory.
+
+-----
+
 ## License
 
-PactKit is available under the MIT license. See the [LICENSE](LICENSE) file for more info.
+PactKit is available under the MIT license. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for more info.

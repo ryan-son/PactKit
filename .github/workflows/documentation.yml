@@ -25,15 +25,23 @@ jobs:
       - name: Select Xcode 16.4
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
 
-      - name: Generate DocC documentation
+      - name: Create output directory
+        run: mkdir -p ./public
+
+      - name: Generate DocC documentation for main branch
         run: |
           swift package \
-            --allow-writing-to-directory ./public \
+            --allow-writing-to-directory ./public/main \
             generate-documentation \
             --target PactKitCore \
-            --output-path ./public \
+            --output-path ./public/main \
             --transform-for-static-hosting \
-            --hosting-base-path PactKit
+            --hosting-base-path PactKit/main
+
+      - name: Create redirecting index.html
+        run: |
+          echo '<!DOCTYPE html>' > ./public/index.html
+          echo '<meta http-equiv="refresh" content="0; url=main/documentation/pactkitcore">' >> ./public/index.html
 
       - name: Create .nojekyll file
         run: touch ./public/.nojekyll
