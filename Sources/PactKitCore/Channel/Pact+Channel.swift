@@ -10,7 +10,29 @@ import Foundation
 
 extension Pact {
   /// A secure communication channel established after a successful handshake.
+  ///
   /// This object holds the symmetric session key and handles encryption and decryption for a single session.
+  /// You obtain a `Channel` object from a successful call to `Pact.Host.establishChannel(with:)`.
+  ///
+  /// ## Usage Example
+  /// ```swift
+  /// do {
+  ///   let (channel, response) = try host.establishChannel(with: counterpartKey)
+  ///   // Send the response back to the counterpart...
+  ///
+  ///   let secretMessage = "This is a secret!"
+  ///   let encryptedData = try channel.encrypt(message: secretMessage)
+  ///
+  ///   // Send encryptedData over the network...
+  ///
+  ///   let receivedData: Data = // ... from counterpart
+  ///   let decryptedMessage = try channel.decrypt(encryptedData: receivedData)
+  ///
+  ///   print(decryptedMessage) // "This is a secret from the other side!"
+  /// } catch {
+  ///   print("Error during secure communication: \(error)")
+  /// }
+  /// ```
   public final class Channel {
     private let sessionKey: SymmetricKey
 

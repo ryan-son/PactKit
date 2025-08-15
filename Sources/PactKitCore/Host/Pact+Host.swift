@@ -10,13 +10,28 @@ import Foundation
 
 extension Pact {
   /// The central object that represents the trusted party (the "Host") in a secure communication setup.
-  /// It manages the Host's identity and is responsible for establishing secure channels.
+  ///
+  /// The `Host` class is the main entry point for the library. It encapsulates the host's permanent cryptographic identity
+  /// and provides methods to establish secure, end-to-end encrypted channels with untrusted counterparts.
+  ///
+  /// ## Topics
+  ///
+  /// ### Initialization
+  /// - ``init(identityStore:)``
+  ///
+  /// ### Identity
+  /// - ``identityPublicKey``
+  ///
+  /// ### Channel Establishment
+  /// - ``establishChannel(with:)``
   public final class Host {
 
     /// The permanent identity of this Host, used for signing operations.
     private let identity: Identity
 
-    /// The public part of the identity key, which can be shared with counterparts for signature verification.
+    /// The public key of this Host's permanent identity, which can be shared with counterparts for signature verification.
+    ///
+    /// This key is the root of trust for any counterpart communicating with this host.
     public var identityPublicKey: Curve25519.Signing.PublicKey {
       identity.publicKey
     }
@@ -24,9 +39,13 @@ extension Pact {
     /// Initializes a new Host instance.
     ///
     /// This initializer will attempt to load an existing identity from the provided key store.
-    /// If no identity is found, a new one will be created and saved automatically.
+    /// If no identity is found, a new one will be created and saved automatically to the store.
+    /// It is recommended to initialize this object on a background thread to avoid blocking the main thread,
+    /// as keychain access can be slow.
+    ///
     /// - Parameter identityStore: The secure store to use for persisting the Host's identity key.
     ///   Defaults to a standard `KeychainStore`.
+    /// - Throws: `Pact.Error` if keychain operations fail or if loaded key data is corrupted.
     public init(identityStore: any SecureKeyStoring = KeychainStore()) throws {
       self.identity = try Identity(keyStore: identityStore)
     }

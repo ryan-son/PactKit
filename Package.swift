@@ -19,6 +19,9 @@ let package = Package(
       targets: ["PactKitCore"]
     ),
   ],
+  dependencies: [
+    .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.3.0"),
+  ],
   targets: [
     .target(
       name: "PactKitCore",
@@ -29,6 +32,7 @@ let package = Package(
       dependencies: ["PactKitCore"]
     ),
   ]
+  // .license = "MIT"
 )
 
 #if compiler(>=6)
