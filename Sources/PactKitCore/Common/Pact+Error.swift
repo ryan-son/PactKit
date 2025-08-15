@@ -58,6 +58,7 @@ extension Pact.Error {
     case keyCreationFromDataFailed
     case encryptionFailed(reason: String)
     case decryptionFailed(reason: String)
+    case invalidKeySize(expected: Int, actual: Int)
 
     public var errorDescription: String? {
       switch self {
@@ -67,6 +68,8 @@ extension Pact.Error {
         return "Encryption failed. Reason: \(reason)"
       case .decryptionFailed(let reason):
         return "Decryption failed. This may be due to data corruption, tampering, or an incorrect key. Reason: \(reason)"
+      case .invalidKeySize(let expected, let actual):
+        return "Invalid key size. Expected \(expected) bytes, but received \(actual) bytes."
       }
     }
   }

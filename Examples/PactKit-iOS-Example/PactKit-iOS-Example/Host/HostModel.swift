@@ -32,7 +32,7 @@ final class HostModel: ObservableObject {
   }
 
   func getIdentityKeyForInjection() -> String {
-    return host.identity.publicKey.rawRepresentation.base64EncodedString()
+    return host.identityPublicKey.rawRepresentation.base64EncodedString()
   }
 
   func handleMessageFromJS(_ messageBody: Any) {
@@ -65,7 +65,6 @@ final class HostModel: ObservableObject {
 
       let escapedString = jsonString.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? ""
       messageToJS.send("window.handleNativeResponse(decodeURIComponent('\(escapedString)'));")
-
     } catch {
       statusMessage = "Error encoding outgoing message: \(error.localizedDescription)"
     }
@@ -74,7 +73,8 @@ final class HostModel: ObservableObject {
   private func handleHandshake(request: Pact.HandshakeRequest) {
     statusMessage = "Received handshake request, establishing channel..."
     do {
-      let (newChannel, response) = try host.establishChannel(with: request)
+      let (newChannel, response) = try host.establishChannel(with: request.ephemeralPublicKey)
+
       self.channel = newChannel
       self.isChannelEstablished = true
       statusMessage = "✅ Secure channel established!"
@@ -94,6 +94,7 @@ final class HostModel: ObservableObject {
     do {
       let decryptedText = try channel.decrypt(encryptedData: message.ciphertext)
       statusMessage = "⬇️ Decrypted message: \"\(decryptedText)\""
+      receivedMessages.append("JS: \(decryptedText)")
     } catch {
       statusMessage = "Error decrypting message: \(error.localizedDescription)"
     }

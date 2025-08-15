@@ -69,14 +69,14 @@ function postToNative(type, payload) {
 
 window.handleNativeResponse = async function(responseJsonString) {
     log(`⬇️ Received response from Native: ${responseJsonString}`);
-    const responseWrapper = JSON.parse(responseJsonString);
+    const response = JSON.parse(responseJsonString);
+    const responseType = response.type;
 
-    if (responseWrapper.type === "handshakeResponse") {
-        await handleHandshakeResponse(responseWrapper.payload);
-
-    } else if (responseWrapper.type === "encryptedMessage") {
+    if (response.type == "handshakeResponse") {
+        await handleHandshakeResponse(response.payload);
+    } else if (response.type == "encryptedMessage") {
         try {
-            const encryptedData = base64ToArrayBuffer(responseWrapper.payload.ciphertext);
+            const encryptedData = base64ToArrayBuffer(response.payload.ciphertext);
             const nonce = encryptedData.slice(0, 12);
             const ciphertext = encryptedData.slice(12);
 
@@ -88,7 +88,6 @@ window.handleNativeResponse = async function(responseJsonString) {
 
             const decryptedMessage = new TextDecoder().decode(decryptedData);
             log(`✉️ Decrypted message from Native: "${decryptedMessage}"`);
-
         } catch (error) {
             log(`❌ Decryption failed: ${error}`);
         }
@@ -98,7 +97,7 @@ window.handleNativeResponse = async function(responseJsonString) {
 async function startHandshake() {
     log("🤝 Starting handshake...");
 
-    if (!NATIVE_IDENTITY_PUBLIC_KEY_B64) {
+    if (!window.NATIVE_IDENTITY_PUBLIC_KEY) {
         log("❌ Error: Native identity key not injected.");
         return;
     }
@@ -112,48 +111,40 @@ async function startHandshake() {
     const jsPublicKeyRaw = await crypto.subtle.exportKey('raw', jsEphemeralKeyPair.publicKey);
 
     const requestPayload = { ephemeralPublicKey: arrayBufferToBase64(jsPublicKeyRaw) };
-    const messagePayload = { type: "handshakeRequest", payload: requestPayload };
 
-    log(`⬆️ Sending handshake request to Native...`);
+    log(`⬆️ Sending handshake request to Native (65 bytes)...`);
     postToNative("handshakeRequest", requestPayload);
 }
 
-async function handleHandshakeResponse(response) {
+async function handleHandshakeResponse(payload) {
     try {
-        const hostEphemeralPublicKeyData = base64ToArrayBuffer(response.ephemeralPublicKey);
-        const signatureData = base64ToArrayBuffer(response.signature);
+        const hostKeyWithPrefix = base64ToArrayBuffer(payload.ephemeralPublicKey);
+        const signatureData = base64ToArrayBuffer(payload.signature);
+
+        const jsKeyWithPrefix = await crypto.subtle.exportKey('raw', jsEphemeralKeyPair.publicKey);
+
+        const hostKeyForTranscript = hostKeyWithPrefix.slice(1);
+        const jsKeyForTranscript = jsKeyWithPrefix.slice(1);
+
+        const transcript = new Uint8Array([
+            ...new Uint8Array(hostKeyForTranscript),
+            ...new Uint8Array(jsKeyForTranscript)
+        ]);
 
         const nativeIdentityPublicKey = await crypto.subtle.importKey(
             'raw', base64ToArrayBuffer(NATIVE_IDENTITY_PUBLIC_KEY_B64),
             { name: 'Ed25519' }, true, ['verify']
         );
-
-        let jsPublicKeyRaw = await crypto.subtle.exportKey('raw', jsEphemeralKeyPair.publicKey);
-
-        if (jsPublicKeyRaw.byteLength === 65 && new Uint8Array(jsPublicKeyRaw)[0] === 4) {
-            jsPublicKeyRaw = jsPublicKeyRaw.slice(1);
-            log("🔧 Stripped 0x04 prefix from own public key for verification.");
-        }
-
-        const transcript = new Uint8Array(hostEphemeralPublicKeyData.byteLength + jsPublicKeyRaw.byteLength);
-        transcript.set(new Uint8Array(hostEphemeralPublicKeyData), 0);
-        transcript.set(new Uint8Array(jsPublicKeyRaw), hostEphemeralPublicKeyData.byteLength);
-
         const isSignatureValid = await crypto.subtle.verify('Ed25519', nativeIdentityPublicKey, signatureData, transcript);
 
         if (!isSignatureValid) {
-            log("🚨 CRITICAL: SIGNATURE VERIFICATION FAILED! Possible MitM attack.");
             throw new Error("Signature verification failed.");
         }
         log("✅ Signature verification successful!");
 
-        const importableHostKey = new Uint8Array(1 + hostEphemeralPublicKeyData.byteLength);
-        importableHostKey[0] = 4;
-        importableHostKey.set(new Uint8Array(hostEphemeralPublicKeyData), 1);
-
         const hostEphemeralPublicKey = await crypto.subtle.importKey(
             'raw',
-            importableHostKey,
+            hostKeyWithPrefix,
             { name: 'ECDH', namedCurve: 'P-256' },
             false,
             []
@@ -165,7 +156,7 @@ async function handleHandshakeResponse(response) {
         );
 
         const salt = new TextEncoder().encode('PactKit-Channel-Establishment-Salt');
-        const info = transcript;
+        const info = transcript; // 128 bytes transcript
         const derivedKeyData = await hkdf(sharedSecret, salt, info, 32);
 
         sessionKey = await crypto.subtle.importKey('raw', derivedKeyData, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']);

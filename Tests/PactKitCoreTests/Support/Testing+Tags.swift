@@ -15,8 +15,10 @@ extension Tag {
 
   // MARK: Feature Area
   @Tag static var channel: Self
+  @Tag static var crypto: Self
   @Tag static var identity: Self
   @Tag static var keychain: Self
+  @Tag static var symmetric: Self
 
   // MARK: Scenario
   @Tag static var happyPath: Self

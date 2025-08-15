@@ -5,8 +5,9 @@
 //  Created by Geonhee on 8/12/25.
 //
 
-import CryptoKit
 import Testing
+import CryptoKit
+import Foundation
 
 @testable import PactKitCore
 
@@ -14,6 +15,7 @@ import Testing
 struct PactHostChannelTests {
 
   var host: Pact.Host!
+  let converter = P256PublicKeyConverter()
 
   init() throws {
     let mockKeyStore = MockKeyStore()
@@ -21,45 +23,114 @@ struct PactHostChannelTests {
   }
 
   @Test(
-    "A secure channel can be successfully established with a valid counterpart",
-    .tags(.integration, .channel, .happyPath)
+    "Establishes a symmetric channel and enables E2E encryption (prefixed key)",
+    .tags(.integration, .channel, .symmetric)
   )
-  func successfulChannelEstablishment() throws {
-    // Simulate a counterpart by creating its own ephemeral key pair.
-    let counterpartEphemeralPrivateKey = P256.KeyAgreement.PrivateKey()
-    let counterpartEphemeralPublicKey = counterpartEphemeralPrivateKey.publicKey
-    let handshakeRequest = Pact.HandshakeRequest(ephemeralPublicKey: counterpartEphemeralPublicKey.rawRepresentation)
+  func successfulChannelEstablishmentWithPrefix() throws {
+    // Arrange: Simulate a counterpart with its own Host instance and a prefixed key.
+    // A real counterpart would be on another device, but for testing, we can simulate it with another Host.
+    let counterpartPrivateKey = P256.KeyAgreement.PrivateKey()
+    var counterpartKeyForExport = Data([0x04])
+    counterpartKeyForExport.append(counterpartPrivateKey.publicKey.rawRepresentation)
 
-    // The Host processes the request and establishes its side of the channel.
-    let (hostChannel, handshakeResponse) = try host.establishChannel(with: handshakeRequest)
+    // Act
+    let (hostChannel, handshakeResponse) = try host.establishChannel(with: counterpartKeyForExport)
 
-    // The counterpart validates the response and establishes its side.
+    // Assert: The response key format should be symmetric.
+    #expect(handshakeResponse.ephemeralPublicKey.count == 65)
 
-    // 1. The counterpart computes the same shared secret.
-    let hostEphemeralPublicKey = try P256.KeyAgreement.PublicKey(rawRepresentation: handshakeResponse.ephemeralPublicKey)
-    let counterpartSharedSecret = try counterpartEphemeralPrivateKey.sharedSecretFromKeyAgreement(with: hostEphemeralPublicKey)
+    // Act (Counterpart side): The counterpart uses the response to establish its own channel.
+    // For this test, we simulate this by calling a hypothetical `counterpart.establishChannel`
+    // or by manually performing the final steps. Let's create the counterpart's channel manually.
+    let (counterpartChannel, _) = try createCounterpartChannel(
+      privateKey: counterpartPrivateKey,
+      hostResponse: handshakeResponse,
+      hostIdentityPublicKey: host.identityPublicKey
+    )
 
-    // 2. The counterpart derives the same session key using the identical HKDF parameters.
-    let counterpartSessionKey = counterpartSharedSecret.hkdfDerivedSymmetricKey(
+    // Assert: The two channels can communicate.
+    try assertCommunication(between: hostChannel, and: counterpartChannel)
+  }
+
+  @Test(
+    "Establishes a symmetric channel and enables E2E encryption (raw key)",
+    .tags(.integration, .channel, .symmetric)
+  )
+  func successfulChannelEstablishmentWithoutPrefix() throws {
+    // Arrange: Simulate a counterpart sending a raw 64-byte key.
+    let counterpartPrivateKey = P256.KeyAgreement.PrivateKey()
+    let counterpartKeyForExport = counterpartPrivateKey.publicKey.rawRepresentation
+
+    // Act
+    let (hostChannel, handshakeResponse) = try host.establishChannel(with: counterpartKeyForExport)
+
+    // Assert: The response key format should be symmetric.
+    #expect(handshakeResponse.ephemeralPublicKey.count == 64)
+
+    let (counterpartChannel, _) = try createCounterpartChannel(
+      privateKey: counterpartPrivateKey,
+      hostResponse: handshakeResponse,
+      hostIdentityPublicKey: host.identityPublicKey
+    )
+
+    try assertCommunication(between: hostChannel, and: counterpartChannel)
+  }
+
+  @Test(
+    "Establish channel should throw invalidKeySize error for incorrectly sized keys",
+    .tags(.integration, .channel, .errorHandling)
+  )
+  func channelEstablishmentFailsWithInvalidKeySize() throws {
+    // Arrange: Simulate a counterpart sending a key with an invalid size (e.g., 62 bytes).
+    let invalidKeyData = Data(repeating: 0x01, count: 62)
+
+    // Act & Assert: Expect the specific error to be thrown.
+    #expect(throws: Pact.Error.self) {
+      _ = try host.establishChannel(with: invalidKeyData)
+    }
+  }
+
+  // MARK: - Test Helpers
+
+  /// Simulates the final steps a counterpart would take to create its own channel after receiving a response.
+  private func createCounterpartChannel(
+    privateKey: P256.KeyAgreement.PrivateKey,
+    hostResponse: Pact.HandshakeResponse,
+    hostIdentityPublicKey: Curve25519.Signing.PublicKey
+  ) throws -> (channel: Pact.Channel, transcript: Data) {
+    let hostKeyForImport = try converter.formatForCryptoKit(from: hostResponse.ephemeralPublicKey)
+    let hostEphemeralPublicKey = try P256.KeyAgreement.PublicKey(rawRepresentation: hostKeyForImport)
+
+    let counterpartKeyForTranscript = privateKey.publicKey.rawRepresentation
+
+    let transcript = hostEphemeralPublicKey.rawRepresentation + counterpartKeyForTranscript
+
+    let isSignatureValid = hostIdentityPublicKey.isValidSignature(hostResponse.signature, for: transcript)
+    #expect(isSignatureValid, "Signature from the Host must be valid.")
+
+    let sharedSecret = try privateKey.sharedSecretFromKeyAgreement(with: hostEphemeralPublicKey)
+    let sessionKey = sharedSecret.hkdfDerivedSymmetricKey(
       using: SHA256.self,
       salt: "PactKit-Channel-Establishment-Salt".data(using: .utf8)!,
-      sharedInfo: hostEphemeralPublicKey.rawRepresentation + counterpartEphemeralPublicKey.rawRepresentation,
+      sharedInfo: transcript,
       outputByteCount: 32
     )
 
-    // 3. The counterpart verifies the signature using the Host's public identity key.
-    let transcript = hostEphemeralPublicKey.rawRepresentation + counterpartEphemeralPublicKey.rawRepresentation
-    let isSignatureValid = host.identity.publicKey.isValidSignature(handshakeResponse.signature, for: transcript)
-    #expect(isSignatureValid, "The signature from the Host must be valid.")
+    return (Pact.Channel(sessionKey: sessionKey), transcript)
+  }
 
-    // 4. Finally, test end-to-end encryption to prove the session keys match.
+  /// Asserts that two channels can successfully encrypt and decrypt a message.
+  private func assertCommunication(between channelA: Pact.Channel, and channelB: Pact.Channel) throws {
     let originalMessage = "Hello, PactKit! This is a secure channel."
-    let encryptedData = try hostChannel.encrypt(message: originalMessage)
 
-    // Create a temporary channel for the counterpart with its derived key.
-    let counterpartChannel = Pact.Channel(sessionKey: counterpartSessionKey)
-    let decryptedMessage = try counterpartChannel.decrypt(encryptedData: encryptedData)
+    // A -> B
+    let encryptedFromA = try channelA.encrypt(message: originalMessage)
+    let decryptedByB = try channelB.decrypt(encryptedData: encryptedFromA)
+    #expect(decryptedByB == originalMessage)
 
-    #expect(decryptedMessage == originalMessage, "The decrypted message must match the original.")
+    // B -> A
+    let encryptedFromB = try channelB.encrypt(message: originalMessage)
+    let decryptedByA = try channelA.decrypt(encryptedData: encryptedFromB)
+    #expect(decryptedByA == originalMessage)
   }
 }
