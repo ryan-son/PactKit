@@ -14,13 +14,19 @@ let package = Package(
     .watchOS(.v8),
   ],
   products: [
-    .library(name: "PactKit", targets: ["PactKit"]),
+    .library(
+      name: "PactKitCore",
+      targets: ["PactKitCore"]
+    ),
   ],
   targets: [
-    .target(name: "PactKit"),
+    .target(
+      name: "PactKitCore",
+      dependencies: []
+    ),
     .testTarget(
-      name: "PactKitTests",
-      dependencies: ["PactKit"]
+      name: "PactKitCoreTests",
+      dependencies: ["PactKitCore"]
     ),
   ]
 )

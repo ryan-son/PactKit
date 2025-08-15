@@ -9,7 +9,7 @@ import CryptoKit
 import Foundation
 import Testing
 
-@testable import PactKit
+@testable import PactKitCore
 
 @Suite("Pact.Identity Tests")
 struct PactIdentityTests {

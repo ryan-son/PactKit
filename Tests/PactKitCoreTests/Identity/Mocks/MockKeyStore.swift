@@ -6,7 +6,7 @@
 //
 
 import Foundation
-@testable import PactKit
+@testable import PactKitCore
 
 /// An in-memory mock implementation of `SecureKeyStoring` for testing purposes.
 final class MockKeyStore: SecureKeyStoring {

@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA4F44DA2E4B9588006DD172 /* PactKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA4F44D92E4B9588006DD172 /* PactKit */; };
-		AA4F44DF2E4B96A7006DD172 /* PactKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA4F44DE2E4B96A7006DD172 /* PactKit */; };
+		AAAB118B2E4F526000CB1B3F /* PactKitCore in Frameworks */ = {isa = PBXBuildFile; productRef = AAAB118A2E4F526000CB1B3F /* PactKitCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,8 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA4F44DA2E4B9588006DD172 /* PactKit in Frameworks */,
-				AA4F44DF2E4B96A7006DD172 /* PactKit in Frameworks */,
+				AAAB118B2E4F526000CB1B3F /* PactKitCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,8 +83,7 @@
 			);
 			name = "PactKit-iOS-Example";
 			packageProductDependencies = (
-				AA4F44D92E4B9588006DD172 /* PactKit */,
-				AA4F44DE2E4B96A7006DD172 /* PactKit */,
+				AAAB118A2E4F526000CB1B3F /* PactKitCore */,
 			);
 			productName = "PactKit-iOS-Example";
 			productReference = AA4F44C72E4B9471006DD172 /* PactKit-iOS-Example.app */;
@@ -117,7 +114,7 @@
 			mainGroup = AA4F44BE2E4B9471006DD172;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				AA4F44DD2E4B96A7006DD172 /* XCLocalSwiftPackageReference "../../../PactKit" */,
+				AAAB11892E4F526000CB1B3F /* XCLocalSwiftPackageReference "../../../PactKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA4F44C82E4B9471006DD172 /* Products */;
@@ -370,20 +367,16 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		AA4F44DD2E4B96A7006DD172 /* XCLocalSwiftPackageReference "../../../PactKit" */ = {
+		AAAB11892E4F526000CB1B3F /* XCLocalSwiftPackageReference "../../../PactKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../../PactKit;
 		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		AA4F44D92E4B9588006DD172 /* PactKit */ = {
+		AAAB118A2E4F526000CB1B3F /* PactKitCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = PactKit;
-		};
-		AA4F44DE2E4B96A7006DD172 /* PactKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = PactKit;
+			productName = PactKitCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
